@@ -1,0 +1,32 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+<p>
+I initially developed the game on my Linux laptop using Python and <a title="Pygame" href="http://www.pygame.org">Pygame</a>.
+</p>
+<p>
+Unfortunately I couldn't get Pygame to Freeze to a static executable. I believe it should be possible as someone <a title="PygameOnSymbian" href="http://code.google.com/p/pygame-symbian-s60/">appeares</a> to have done so for Symbian. Unfortunately I couldn't get it to work. One of the restrictions of working on the Wii is that everything must be statically linked. This meant I couldn't use Pygame.
+</p>
+<p>
+Fortunately Pygame is just wrapper around <a title="SDL" href="http://www.libsdl.org/">SDL</a>, albeit a very good one. With my game complete it was fairly easy to extract out my Pygame dependencies to my own Python module, called MyGame. The Pygame wrapper version 'mygame.py' still exists for using the game without building the C SDL wrapper module.
+</p>
+<p>
+With Pygame removed from the core game I could set out rebuilding my own <a title="Pyrex" href="http://www.cosc.canterbury.ac.nz/greg.ewing/python/Pyrex/">Pyrex</a>/C SDL wrapper that could be statically linked. My own wrapper also gave me the opportunity to encapsulate the other Wii dependencies within this library. This meant the core game was entirely portable with no knowledge of Wii, Linux or Windows.
+</p>
+<p>
+The only small difference per platform was the 'main' class which launches the game 'wiigameengine' compared to 'gameengine'. This was necessary to encapsulate the screen/audio config differences for Wii and my Linux machine.  Additionally when running on Linux my launcher 'gameengine' would support debug flags to jump direct to certain levels etc. Clearly passing command line flags on the Wii is not possible!
+</p>
+<p>
+The <a title="WiiPy" href="http://wiibrew.org/wiki/WiiPy">WiiPy</a> project game me a working Python/Pyrex build system to build my SDL wrapper on. Pyrex is a tricky beast to master but when done so it is exceptionally powerful. It allows the definition of C functions/structs stubs which can then be used inline with Python classes and functions. It handles the conversion to/from C of Python objects and, once you are familiar with its restrictions, allows easy access to C libraries from Python.
+</p>
+<p>
+The most tricky bit of Pyrex is dealing with the dreaded 'cannot convert blah * to Python object' errors. These happen for many reasons but usually because you haven't defined the C stub correctly or the cdef variables correctly in your Python code. It takes a lot of fiddling to get this right the first few times.
+</p>
+<p>
+The result: an SDL wrapper module 'mygame.pyx' which compiles down to mygame.o for linking (with libSDL). Additionally this module wraps a few Wii libraries to allow the Wii specific code to initialise various libraries (the SDCard's FAT filesystem and the controllers etc).
+</p>
+<p>
+The same module can be built for Linux or Wii by using the appropriate Makefile and changing the #define WII flag.
+</p>

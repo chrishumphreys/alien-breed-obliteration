@@ -1,0 +1,93 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+<p>
+My <a title="Finding the Alien Breed clone media files" href="finding-media.html">previous reverse engineering attempts</a> gave me vital access to the media files in order to develop the game. However, I can't really expect the game player to go through those steps to install a game! What I really needed is a way of programmatically extracting the contents of the XAV file included with <a title="FlashJesterPunk's game" href="https://www.mobygames.com/game/alien-breed-obliteration">FlashJesterPunk's game</a>. This meant opening up Olydbg again and taking a closer look at the file reading code.
+</p>
+<p>
+My previous attempts had found some code responsible for reading the encoded data from the xav file (at <em>0x00405580</em>). It was clear that this data was encoded in some way, possibly compacted as it was much smaller than the decoded output. It was also discovered that at <em>0x004055B3</em> the data had been decrypted/uncompressed. This code was found by breakpointing on <em>ReadFile</em> and <em>SetFilePointer</em> - both responsible for seeking and reading the data from the archive.
+</p>
+<p>
+<a href="wp-content/uploads/2010/10/ab-disam-decode1.png"><img class="alignnone size-medium wp-image-97" title="ab-disam-decode1" src="wp-content/uploads/2010/10/ab-disam-decode1-300x261.png" alt="" width="300" height="261" /></a>
+</p>
+<p>
+This code shows the reading of the encoding data from the XAV file (call at <em>0x00405580</em>) followed by a call to a decoding routine (call at <em>0x004055A8</em>).
+</p>
+<p>
+Inspecting <em>0x00405580</em> shows some code determining the file offset and encoded length, presumably by reading the XAV files index.
+</p>
+<p>
+Following this are the calls to <em>SetFilePointer</em> (file seek) and <em>FileRead</em> which actually load the encrypted data.
+</p>
+<p>
+The call at <em>0x004055AB</em> then appears to decrypt/uncompress the data. This is where the real complexity lies.
+</p>
+<p>
+Having access to the decoded real media files from my previous attempt is a real help when exploring the compaction algorithms at play. A quick check using 7Zip showed that compacting a few of the media files resulted in roughly the same deflated archive size - so it is likely the game is using a Zip style compaction algorithm. Unfortunately it wasn't Zip and finding out what it was would take a bit more of effort.
+</p>
+<p>
+To understand the algorithms responsible for decoding the data we need to reverse engineer the code for the procedure at <em>0x00404DB0</em> by hand trying to determine the meaning of the assembler. Olydbg allows you to enter a comment against an assembler instruction which helps the readability enormously.
+</p>
+<p>
+After a bit of work the general structure appears to be:
+</p>
+<p>
+<a href="wp-content/uploads/2010/10/ab-disam-decode2.png"><img class="alignnone size-medium wp-image-101" title="ab-disam-decode2" src="wp-content/uploads/2010/10/ab-disam-decode2-300x269.png" alt="" width="300" height="269" /></a>
+</p>
+<p>
+This reveals a 3 step process:
+<br/>
+Given a pointer to the encoded data and encoded buffer length
+<ol>
+	<li>Initialise some magic words (encryption salt/keys?)</li>
+	<li>Loop over the encoded data, byte by byte, updating the data. This does not adjust the data length suggestion this is a decryption algorithm.</li>
+	<li>Decode the data further into the output buffer. This step appears to expand the data suggesting this is an inflation algorithm. The call is at <em>0x00404E6E</em>.</li>
+</ol>
+<br/>
+This is similar to how you would read a zip archive which has a password applied to the file contents.
+<br/>
+For our <em>xavreader</em> code we would need to reproduce these steps.
+</p>
+<p>
+Reading the file data is straightforward, it is simply a file seek followed by a file read of the correct length. This can be tested easily enough in isolation using a small C program and comparing against a dump of the encoded buffer using the <a title="MemoryDump plugin" href="http://www.woodmann.com/collaborative/tools/index.php/MemoryDump">MemoryDump plugin</a>. We can easily capture the file offsets and lengths using a uHooker script.
+</p>
+<p>
+To decrypt the data we need to reproduce the behaviour of the algorithm at <em>0x00423AF0</em>. I didn't recognise the algorithm but it did use a reasonable set of lookup tables (as DES does). I assume it is a symmetric block cipher similar to DES. Fortunately the algorithm's implementation is small and easily reverse engineered by hand.
+</p>
+<p>
+<a href="wp-content/uploads/2010/10/ab-disam-decode3a1.png"><img class="alignnone size-medium wp-image-114" title="ab-disam-decode3a1" src="wp-content/uploads/2010/10/ab-disam-decode3a1-300x241.png" alt="" width="300" height="241" /></a>
+</p>
+<p>
+The only tricky part is the updating of the 'magic words' per character. That would need careful reproduction:
+</p>
+<p>
+<a href="wp-content/uploads/2010/10/ab-disam-decode3a.png"><img class="alignnone size-medium wp-image-115" title="ab-disam-decode3a" src="wp-content/uploads/2010/10/ab-disam-decode3a-300x268.png" alt="" width="300" height="268" /></a>
+</p>
+<p>
+Modifying our C program to replicate this behaviour is straightforward. This allows us to read the encrypted data, decrypt and compare the results using another MemoryDump from Olydbg. We are getting closer....
+</p>
+<p>
+The inflation algorithm is harder. Attempts at reversing by hand revealed a reasonably complex algorithm with large lookup tables and dynamic heap allocation. A reasonable set of sub-calls are used.
+</p>
+<p>
+Fortunately I got a bit of luck here. The disassembly used what looked like hardcoded magic strings ("1.2.2") and what looked like error messages ("invalid distance too far back", "invalid literal/length code"). It is reasonable to assume the former is some sort of version identification of the algorithm used. A google search for these two strings struck the jackpot. Google identified that both strings were part of the OpenSource <a title="zLib" href="http://zlib.net/">zLib</a> compaction/de-compaction library.
+</p>
+<p>
+zLib make available a binary build of their library as a DLL. Opening this up in Olydbg and searching for those strings and looking for similar call signatures to that in AlienBreed identified:
+<p>
+<a href="wp-content/uploads/2010/10/ab-disam-decode4.png"><img class="alignnone size-medium wp-image-109" title="ab-disam-decode4" src="wp-content/uploads/2010/10/ab-disam-decode4-300x179.png" alt="" width="300" height="179" /></a>
+</p>
+<p>
+It is therefore clear that AlienBreed obliteration includes a statically linked zLib library and calls zLib's <em>int ZEXPORT uncompress (dest, destLen, source, sourceLen)</em> method. This should be fairly easy to replicate in our C program. The zLib spec's indicate that the encoded data should start with two magic numbers. Our data does not therefore our data must be a raw zLib stream. Modifying the zLib sample code to call uncompress on a raw zLib stream against our encoded data produces a perfect match for our de-compacted media file. Bingo.
+</p>
+<p>
+Producing the <a href="wp-content/uploads/2010/10/xavreader.c">final version</a> of our code is then a straightforward task. Using the file index contents captured by this <a href="wp-content/uploads/2010/10/CreateFileHook.cfg">uHooker config</a> and <a href="wp-content/uploads/2010/10/mymodule.py">python module</a> and hardcoding that data in the C program calling read, decrypt and inflate allows us to write out all the media files we need in one go.
+</p>
+<p>
+This program is a much more suitable solution for our build scripts as well as allowing a run-time installer for the game. This means I do not need to distribute FJP's copyrighted material with the game.
+</p>
+<p>
+This <a href="wp-content/uploads/2010/10/xavreader.c"><em>xavreader.c</em></a> code will be a crucial part of the Alien Breed installer.
+</p>

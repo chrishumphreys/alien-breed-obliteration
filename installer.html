@@ -1,0 +1,67 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+<p>
+Now I had <a href="reading-media.html">programmatic access</a> to <a href="https://www.mobygames.com/game/alien-breed-obliteration">FlashJesterPunk's game media</a> I could set about writing an installer for <a href="http://www.habitualcoder.com/ab">my Wii clone</a>. This would need to be a little more complicated than simply extracting the files as I am not planning on distributing the game media with the app for copyright reasons.
+</p>
+
+<p>
+The steps I need to reproduce from the Linux build process are:
+<ol>
+	<li>Download FJP's game Zip from his website.</li>
+	<li>Extract FJP's game Zip file.</li>
+	<li>Extract game media files</li>
+	<li>Process the Audio</li>
+	<li>Apply patches to the config files to implement the few config changes I made in the Wii clone.</li>
+	<li>Extract a Zip file of the build Wii executable.</li>
+</ol>
+</p>
+
+<h1>Downloading FJP's game </h1>
+
+<p>
+The installer should check if the archive is already present on the sdcard before downloading to cater for the case where the Wii's Wifi is not functioning.
+<br/><br/>
+Fortunately there is some sample Http download code for the Wii available on the <a href="http://wiibrew.org/wiki/Homebrew_Browser">WiiBrew site</a>. This demonstrates how to initialise the Wii network and request the file.
+</p>
+
+<h1>Extracting FJP's Zip </h1>
+
+<p>
+The only file we need from the Zip is the <em>data1.xav</em> file. We will need to use an unzip library to extract this file. A suitable unzip implementation is the <a href="http://www.winimage.com/zLibDll/unzip.html">mini-unzip</a> code for the <a href="http://zlib.net/">zLib</a> library. This only required minor changes to compile for the Wii.
+<br/><br/>
+Once extracted we need to check the archive is identical to the one the <a href="wp-content/uploads/2010/10/xavreader.c">xavreader</a> code expects. This can be done by checking the MD5 sum. <a href="http://www.fourmilab.ch/md5/md5.zip">Here</a> is a suitable implementation of MD5 which can be adapted for the Wii.
+</p>
+
+<h1>Extracting the game media </h1>
+<p>
+All the game media is hidden inside a custom archive called <em>data1.xav</em>. Fortunately our <a href="hreading-media.html">previous investigations</a> have allowed us to read the contents. Reading and saving these into the correct directories is straightforward.
+</p>
+
+<h1>Process the audio </h1>
+<p>
+There are two types of audio in FJP's game, OggVorbis files and Amiga TrackerMod music files (*.xm files). The TrackerMod files will play directly using SDL_Mixer on the Wii so can be extracted as is. The OggVorbis files require processing first.
+<br/><br/>
+The Wii audio system can be initialised in only two ways, for 32KHz or 48KHz audio. The SDL_Mixer implementation appears only to play 32KHz audio successfully. Therefore we must re-sample the audio to 32KHz as part of the installation.
+<br/><br/>
+A suitable method for this is to convert the Ogg files to Wav format using the <a href="http://svn.xiph.org/trunk/Tremor/ivorbisfile_example.c">ivovrbisfile_example</a> code shipped with the <a href="http://wiki.xiph.org/index.php/Tremor">Tremor</a> Ogg library. Then this Wav can be re-sampled using the resample code shipped with <a href="http://www.mega-nerd.com/SRC/">libsamplerate</a>. To use libsamplerate this library, and the required <a href="http://www.mega-nerd.com/libsndfile/">libsndfile</a> library, must be compiled for the Wii. Fortunately Erik de Castro Lopo's code is very portable and will configure and compile easily under <a href="http://devkitpro.org/">devkitpro</a>.
+</p>
+
+<h1>Apply patches </h1>
+<p>
+I made a few small changes to the config data. These are distributed as udiff files. I couldn't find a suitable simple unified diff patch util that will compile for the Wii so wrote my own based on the specifications <a href="http://www.artima.com/weblogs/viewpost.jsp?thread=164293">here</a>.
+</p>
+
+<h1>Extracting Wii executable </h1>
+<p>
+The PC build process will package this as a Zip which can then be extracted using the mini-unzip code used previously.
+<br/><br/>
+The only other work is to wrap it in a simple GUI (using SDL) and provide some feedback on the installation process. Unfortunately due to the speed of an sdcard for file read/writes the installation process will be significantly slower on the Wii than on a PC.
+<br/><br/>
+The final code suitable for the Wii or Linux can be found <a href="https://sourceforge.net/p/wiiab/code/HEAD/tree/trunk/pyinstaller/">at the sourceforge project</a>.
+</p>
+
+</body>
+</html>

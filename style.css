@@ -1,0 +1,41 @@
+
+@column-margin: 9px;
+@link-color: rgb(78, 78, 78);
+@link-hover-color: rgb(160, 160, 160);
+
+h1 {
+      height: 55px;
+      line-height: 55px;
+      text-transform: uppercase;
+      font-size: 15px;
+      font-weight: 700;
+      padding-left: 30px;
+    }
+
+
+body {font-size:100%;color:white; background-color: black;
+
+
+  margin: 0 0 0 55px;
+  width: auto;
+  font-family: helvetica, arial, sans-serif;
+  line-height: 1.2em;
+
+}
+p {color:white;font-family:"Helvetica", sans-serif;}
+h2 {color:#606060; font-family:"Helvetica", sans-serif; text-align: justify; letter-spacing: 3px;font-size:1.5em;}
+h1 {color:#E0E0E0; font-style:normal; font-family:"Helvetica", sans-serif; text-align: justify; letter-spacing: 3px;font-size:2.0em;}
+A:link {text-decoration: underline; color: white;}
+A:visited {text-decoration: underline; color: white;}
+A:active {text-decoration: underline; color: white;}
+A:hover {text-decoration: underline; color: white;}
+.intex {}
+.intex a {color:#5BE804;}
+ul > li {
+    display: inline-block;
+    /* You can also add some margins here to make it look prettier */
+    zoom:1;
+    *display:inline;
+    /* this fix is needed for IE7- */
+}
+

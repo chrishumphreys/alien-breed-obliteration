@@ -1,0 +1,131 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+
+<h1>Background</h1>
+
+<p>
+Having never built a game of this type before I needed to familiarise myself with the game structure. Fortunately this was quite apparent after looking at <a title="FlashJesterPunk AlienBreed" href="https://www.mobygames.com/game/alien-breed-obliteration">Flash Jester Punk's</a> level data and using his in-built level designer.
+</p>
+
+<p>
+Alien Breed obliteration is essentially a 2d square tile based background with dynamic character overlays. The tiles are static and the background never changes. Only the characters are dynamic.
+</p>
+
+<p>
+The background is actually composed of 2 layers, a lower layer which is usually fully defined and an upper layer adding finer details (angled corners, special walls etc) which is only sparsely defined. You can see this through the level designer by showing/hiding upper levels.
+</p>
+
+<p>
+Alien Breed includes a level designer which allows exploration of the tile set and experiments with the level data. This has been invaluable for determining the structure of the level maps.
+<p>
+
+<p>
+The background for a particular level is defined in a file <em>levellX.til</em>. It is a sequence of 16bit words indicating the tile index at a certain x,y position for the lower level. Word 0 is 0,0, word 1 is 1,0 etc. The sparse upper level data is interleaved within this data. The parser can spot that the value refers to the upper level as it is proceeded by 0x8000 (which is larger than the max tile number). Once this structure is understood writing a level loader for this data is fairly straight forward (<em>array_levelloader.py</em>). Care must be taken around word byte ordering differences between Intel (LSB) and PPC chip (MSB) in the Wii.
+</p>
+<p>
+There is also a meta data file describing the characteristics of a tile, <em>tileset.map</em>. This must be read to determine if a particular background tile should block the player/bullets (for example indicating the tile is a wall).
+</p>
+<p>
+In the Wii game the Level class (<em>level.py</em>) loads owns the background tile map and is used by the Display class (<em>display.py</em>) to plot the background every game cycle.
+</p>
+
+<h1>Characters</h1>
+
+<p>
+Any dynamic behaviour (animated objects or movable characters) must be modeled as a Character 'Unit'. In FJP's designer you can see the list of units and add them at particular coordinates on the map. The designer also presents the name of the unit in the form of the unit's configuration file (e.g. player1.uni).
+</p>
+<p>
+Examples of units are explosions, player, aliens, alien spawners, bullets, doors and pickups.
+</p>
+
+<p>
+The design of a Unit can be determined by inspecting the Unit's configuration file, e.g. <em>player1.uni</em>.
+</p>
+<pre>BITMAP file=player1.bmp tileheight=32 tilewidth=32
+STATS health=50 speed=130 collideable=1
+OBJECTTYPE type=friendly
+SPAWN state=moveup
+ANIMATION state=moveup numframes=4 firetile=4 firex=15 firey=4
+FRAME tile=0 time=120
+FRAME tile=1 time=120
+FRAME tile=0 time=120
+FRAME tile=2 time=120
+ANIMATION state=moveupright numframes=4 firetile=9 firex=-6 firey=6
+FRAME tile=5 time=120
+FRAME tile=6 time=120
+</pre>
+
+<p>
+A Unit can be in a number of states (an 'Animation State'). Within that state the unit is normally cycling through a number of animation frames. For example above, the Unit could be in the state representing moving up. The 4 frames represent the images of moving feet and arms.
+</p>
+<p>
+A Unit identifies a sprite map containing a tiled set of sprites representing the different animation frames for the unit ('BITMAP'). The 'FRAME' configuration then references the sprite through the sprite's index.
+</p>
+<p>
+Occasionally the Unit will change Animation state automatically when it reaches the end of a list of Frames. More often it will just loop back to the first frame. A character often changes state based on some game logic, for example pressing the Up key instructs the Player unit to  enter state 'moveup'.
+</p>
+<p>
+In the Wii game this logic around interacting with a character and how the character behaves is encapsulated in the behavior classes (<em>behaviour.py</em>). When the list of units for a level is loaded, as defined in <em>levelX.lev</em> data, each unit is assigned a behaviour class.
+</p>
+<p>
+To allow a dynamic Unit to update itself, or be updated by other units (e.g. being hit by a bullet/alien etc) the main game loop must call update() on every unit every frame. As only Units are dynamic only units must be updated.
+<p>
+
+<h1>Main level loop</h1>
+
+<p>
+Playing a level essentially comes down to:
+<ul>
+	<li>Load shared tileset images (<em>tileset1.bmp</em>) and meta data (<em>tileset1.map</em>)</li>
+	<li>Load level map data (<em>levelX.til</em>) and level unit data (<em>levelX.lev</em>).</li>
+	<li>Create units and assign behaviour</li>
+	<li>Loop:
+<pre>while (!finished) {
+
+    //wait for frame rate sync
+
+    //Allow each unit to update its state or be updated
+    for each unit {
+        update()
+    }
+
+    //Plot the static background
+    tile_background.plot()
+
+    //Plot each unit ontop of the background
+    for each unit {
+        unit.plot()
+    }
+
+    //sdl display flip
+}
+</pre>
+</li>
+</ul>
+</p>
+<p>
+There are optimizations to reduce the effort for units which are not on screen etc. but the above is essentially the structure of the level play code (class LevelplayScene in <em>scene.py</em>).
+</p>
+
+<h1>Main game structure</h1>
+
+<p>
+There is more to the game than just playing a level. There is the main menu, level intro scenes and Intex terminal scenes  etc. Essentially the game consists of multiple types of Scene (<em>scene.py</em>), only one of which is active at any one time. The sequence of scenes and the transitions of scenes are controlled by a Director (<em>director.py</em>). For example an example game flow looks like:
+<br/>
+Menu scene -&gt; Level intro scene -&gt; Level play scene -&gt; Game over scene -&gt; Menu scene
+</p>
+
+<h1>Summary</h1>
+
+<p>
+Put together this defines the structure to navigate menus and play levels consisting of static background tiles and dynamic characters. This is the majority of the game.
+</p>
+
+<p>
+There are additional areas of complexity which are called upon by the above components (input handling, collision detection, AI etc) but I''ll leave that up to the reader. You can easily find the code responsible by navigating from the Unit's behaviour class.
+<p>
+</body>
+</html>

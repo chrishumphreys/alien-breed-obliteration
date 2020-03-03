@@ -1,0 +1,95 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+
+<p>
+I've recently completed a <a title="Wiiab" href="intro.html">Wii game</a> in Python. Playing it on the Wii isn't bad but it would be nice to run it on my new Android phone. Although it looks like you can run some scripting languages on Android trying to  run an entire game in Python is probably more trouble than it is worth. What I really need is the game in Java.
+</p>
+
+
+<h1>Translating the syntax</h1>
+
+<p>
+Source translation is tricky stuff. Translating from a dynamically typed language like Python to a statically typed language like Java is extra hard as you must infer the missing type information. There are some experimental translators out there, such as <a title="ShedSkin" href="http://shed-skin.blogspot.com/">ShedSkin</a>, for converting Python subsets to C. I suspect a general solution is out of the question. But is a limited solution possible? Is it sufficient for my task?
+</p>
+
+<p>
+Java is an OO imperative language. Python is much more than that but is also a very good OO language. Python and Java actually share a large number of the syntax constructs. Python has quite a lot more, especially around functional programming concepts. Fortunately my game doesn't use many. I'm a Java programmer so the Python I write is basically the same design as I would implement in Java, this makes translation possible.
+</p>
+
+<p>
+I could translate the code line by line, but estimates of manual translation are around 300 lines a day. At about 20k lines of code that would take 2 months of solid work. Not fun. What I needed was a tool to do it for me.
+</p>
+
+<p>
+A source translator tool must parse the original Python source, build an Abstract Source Tree (AST) and convert the AST into a Java grammar. Due to the similarity between the Python syntax and Java this should be possible.
+</p>
+
+<p>
+Python actually includes the capability to parse itself. The ast module includes skeleton classes which can be extended to parse and visit each node of an AST in turn. Extending the <a title="Ast" href="http://docs.python.org/library/ast.html">ast.NodeVisitor</a> class allows custom behaviour when each python syntax construct is encountered. The code in <a href="https://github.com/chrishumphreys/p2j/raw/9c1640925b0b7c0f4a50151f55b4c62d66b1fc07/translator/translate.py">translate.py</a> and <a href="https://github.com/chrishumphreys/p2j/raw/9c1640925b0b7c0f4a50151f55b4c62d66b1fc07/translator/parser.py">parser.py</a> does just that.
+</p>
+
+<p>
+In our case we could be a Concrete Syntax Tree (CST) for Java based on visiting the AST. This would be the most flexible option. However it turns out we can get by with simply outputting Java string templates when encountering AST nodes. <a href="https://github.com/chrishumphreys/p2j/raw/9c1640925b0b7c0f4a50151f55b4c62d66b1fc07/translator/visitor.py">visitor.py</a> does that.
+</p>
+
+
+<p>
+For each of the syntax constructs I've used in the game I've written a test (<a href="https://github.com/chrishumphreys/p2j/raw/9c1640925b0b7c0f4a50151f55b4c62d66b1fc07/translator/test.py">test.py</a>) and implemented a visitor to create a Java equivalent. After some work all the source files are being translated.
+</p>
+
+<p>
+Comment blocks need to be handled slightly differently as they are not preserved by the Python ast Parser. A pre-processor converts them to a multi-line string construct first. It is a bit of a hack but functional.
+</p>
+
+<p>
+The output isn't bad but is still not very helpful as it is lacking all type information. Adding this by hand will require editing virtually every line. And determining the types by hand is not easy.
+</p>
+
+<h1>Type inference</h1>
+
+<p>
+The Python source does not contain type information. It might be possible in some cases to infer the type by the usage but this would be difficult to do, if not impossible in the general case.
+</p>
+<p>
+But there is an easier way. Python is a dynamic type language. This means the type of an object is determined at run time and not enforced at compile time, it is not specified in the source. However when running the Python app you can determine the runtime type information of an object by looking at the <em>__class__.__name__ </em>attribute.
+</p>
+
+<p>
+Python includes an inspect module for building profilers and debugger. By implementing a <em>def traceit(frame, event, arg) </em>method and hooking it up to the interpreter via <em>sys.settrace(traceit)</em> you can hook into a number of interesting events whilst the app is running. One of those events is method calls. This makes implementing a simple hook to inspect and index the runtime type of all method arguments fairly straightforward. All that is left to do is run the application under the profiler and 'exercise' every part of the code, which in our case means playing the game.
+</p>
+
+
+<p>
+Profiling a running game is slow. We need the application to be usable in order to 'exercise' the relevant methods. For this reason the tracer is restricted to profiling methods within a single python source file at any one run. On fast machine you could change this if you like but on a machine like mine you must run the profiler once for each source file.
+</p>
+
+<p>
+With the captured trace files for each source file the source translator can be modified to lookup and add type information when generating method syntax. As most variables will either be set or returned from methods at some point this is a good start.
+</p>
+
+<p>
+In its current form the tool will perform about 75% of code translation. The remainder must be converted manually. A lot of the outstanding syntax errors can be fixed semi-automatically with a modern Java IDE. For example you must use the IDE to infer the local variable type definitions of every local variable and class attribute. This is usually possible as the same variable will probably be passed to/from a method at some point allowing the IDE to infer type.
+</p>
+<p>
+It is quite likely a better job could be done by using more profiling hooks to dump the runtime type of all  in-scope variable for each method invocation. I didn't need to do this but is an area for the future.
+</p>
+
+<p>
+The remainder of the work is dealing with unsupported concepts (like creating value objects for tuples etc)  and porting library client code to Java equivalents. I found initially creating Java API stubs for the missing python APIs helpful. Once all the Java is compiling it was easier to implement the new fuctionality step by step.
+</p>
+
+<h1>Conclusion</h1>
+
+<p>
+If you write Python in a Java style then semi-automatic source translation to Java is possible. It worked for me on my <a href="intro.html">project</a> and was much more fun (and less error prone) than converting by hand. There is scope for  improvement and I'd be interested in hearing from anyone who needs this. Good luck.
+</p>
+
+<p>
+The source is <a title="p2j project" href="https://github.com/chrishumphreys/p2j/">available on GitHub</a>.
+</p>
+
+</body>
+</html>

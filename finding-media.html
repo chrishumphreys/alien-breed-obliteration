@@ -1,0 +1,63 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+<p>FlashJesterPunk's excellent Freeware <a href="https://www.mobygames.com/game/alien-breed-obliteration">Alien Breed Clone</a> was an easy starting point for <a href="intro.html">building a clone</a> (easier than the Amiga original).
+</p>
+
+<p>
+FJP handily includes a level editor with his game allowing you to experiment with designing your own levels. That tool revealed information about the makeup of the game's media and configuration. It suggested that the level data was stored in tile maps built from a prescribed set of tiles and that the dynamic characters of the game, called 'Units', were configured in individual '.uni' files.
+</p>
+
+<p>
+This hinted that somewhere in the game's distribution were a set of individual files relating to the game media. They were not packaged individually but instead compacted into a custom archive format within the 'data1.xav' file. It would be nice to get into this archive.
+</p>
+
+<p>
+<a href="uploads/2010/07/alienbreed2k5x.png"><img class="alignnone size-medium wp-image-42" title="alienbreed2k5x" src="wp-content/uploads/2010/07/alienbreed2k5x-300x62.png" alt="" width="300" height="62" /></a>
+</p>
+
+<p>
+Time to take a look how FJP's executable is reading the file. Time to start <a href="http://www.ollydbg.de/">OllyDbg</a>.
+</p>
+
+<p>
+Setting a breakpoint on CreateFileA and ReadFile allow us to inspect the game loading the individual files. A quick look at the stack contents reveals pointers to the file names and the memory buffers where the data will be read. Stepping over the API call allows us to inspect the resulting data. Unfortunately, although this has read the data it is still compacted. The data makes no sense - we can tell that by the absence of important plain text magic file indicators like BM6 for BMP files which would be present in the memory buffer but are not.
+</p>
+
+<p>
+A bit of frame stepping later and we reveal a handy breakpoint where the file decoding has happened. Conveniently for us at this point in the program the stack  contains references to the decoded file buffer, file size and filename. Everything we need to recreate the original decoded file.
+</p>
+<p>
+<a href="wp-content/uploads/2010/07/breakpoint.png"><img class="alignnone size-medium wp-image-43" title="breakpoint" src="wp-content/uploads/2010/07/breakpoint-300x246.png" alt="" width="300" height="246" /></a>
+</p>
+<p>
+<a href="http://www.ollydbg.de/">OllyDbg</a> is an incredible tool. Back in the day I did a bit of C Windows development and used the iconic SoftIce debuggger. A feature I always wanted from SoftIce was the ability to execute custom behaviour on breakpoints - allowing me to inject my behaviour into the target application. And that is exactly what OllyDby and the awesome plugin uHooker allows.
+</p>
+<p>
+<a href="http://oss.coresecurity.com/projects/uhooker.htm">uHooker</a> allows us to write simple Python scripts which will execute on a breakpoint. They have access to the target program's memory, registers and stack. This everything we need to retrieve and write to file the contents of the file we saw in the debugger. In a low level way this is analogous to writing an aspect for a java class library - except it is with Python on a WIN32 executable.
+</p>
+<p>
+uHooker uses a <a title="uHooker configuration file" href="/wp-content/uploads/2010/07/CreateFileHook.cfg">configuration file</a> and a <a title="uHooker Python module" href="/wp-content/uploads/2010/07/mymodule.py">module file</a>. In our case I have registered my module with the breakpoint 0x004055B3 we found by manual inspection. The Python  module simply retrieves the values from the stack, opens a file and dumps the memory buffer. My uHooker files also contain my earlier handlers to save the encoded file for reference.
+</p>
+<p>
+<a href="wp-content/uploads/2010/07/uhooker.png"><img class="alignnone size-medium wp-image-45" title="uhooker" src="wp-content/uploads/2010/07/uhooker-300x220.png" alt="" width="300" height="220" /></a>
+</p>
+<p>
+With this in place we restart the game and play it. We need to play every level so  enabling cheats is quite handy! Once we are confident we have given the game an opportunity to access every media file we can exit and check our tmp directory.
+</p>
+<p>
+To our relief, decoded and (fairly) understandable media/config files for our game. Thanks FJP!
+</p>
+<p>
+The next step is to figure out what these files mean, starting with the level tile data.
+</p>
+<p>
+<a href="wp-content/uploads/2010/07/output.png"><img class="alignnone size-medium wp-image-44" title="output" src="wp-content/uploads/2010/07/output-300x201.png" alt="" width="300" height="201" /></a>
+</p>
+<p>
+A note about legality: Reverse engineering is legal (at least here in the UK) for personal and educational purposes (clearly what we are doing here). It is a grey area if you are  attempting to bypass copy protection or DRM (not what we are doing here). FJP's game is freely distributed and does not come with any license restrictions for doing the above for personal use. It does state you cannot distribute his media which is why I haven't. When the game is complete I plan to reach out to FJP and see if I can get permission to distribute. I do not condone software piracy.
+<p>
+</body>
+</html>

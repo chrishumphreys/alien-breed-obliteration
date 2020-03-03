@@ -1,0 +1,29 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+<p>
+Python has a very good SDL interface in the form of <a title="Pygame" href="http://www.pygame.org">Pygame</a>. Pygame is quick to learn and quick to become productive. Knocking up an SDL game in Python is therefore very easy. I recommend it to anybody thinking of doing something similar.
+</p>
+
+<p>
+I'd used Pygame before for a few smaller projects so it was a natural choice for building my <a title="AlienBreed Wii clone" href="http://www.habitualcoder.com/ab">Alien Breed clone</a>. It had the distinct advantage of allowing me to develop on my Linux Eeepc on my daily commute to work, something other stacks would not have allowed.
+</p>
+<p>
+Unfortunately Pygame hadn't been ported to the Wii environment and doing so posed a few problems.
+</p>
+<p>
+Python had been ported in the form of <a title="WiiPy" href="http://wiibrew.org/wiki/WiiPy">WiiPy</a>. This project consisted of a set of patches to allow cross compiling the Python interpreter using the <a title="DevKitPro" href="http://www.devkitpro.org/">DevkitPro</a> GCC environment for the Wii. Additionally a set of (incomplete) <a title="LibOGC" href="http://wiibrew.org/wiki/Libogc">LibOGC</a> wrappers were provided to allow access to the essential Wii homebrew APIs. A significant number of Python modules had to be disabled in order to get Python to compile, notably anything to do with the OS as the equivalent behaviour was not available in the DevKitPro libraries.
+</p>
+<p>
+Unfortunately the LibOGC wrappers were in an incomplete state and not really practical. However as my game would be based on <a title="SDL" href="http://www.libsdl.org/">SDL</a>, and some kind folks had already <a title="SDL_Wii" href="http://wiibrew.org/wiki/SDL_Wii">ported</a> SDL to the Wii. I did not need the LibOGC wrappers. They did however point the way to how an Python SDL wrapper could be built for the Wii - by using the Python/C glue technology <a title="Pyrex" href="http://www.cosc.canterbury.ac.nz/greg.ewing/python/Pyrex/">Pyrex</a>.
+</p>
+<p>
+Python has a utility called <a title="Freeze" href="http://wiki.python.org/moin/Freeze">Freeze</a> which creates C bootstrap code for the Python interpreter for a set a Python files. This allows you to build a standard ELF executable for a Python program. This is not the same as converting Python source to C code which is much harder. The game is still running the Python interpreter but crucially it allows us to create a single ELF executable, statically linked with all the required SDL/Wii libraries, using the standard DevKitPro tool chain.
+</p>
+<p>
+Read more about the <a title="From Pygame to Mygame" href="mygame.html">SDL wrapper development</a>.
+</p>
+</body>
+</html>

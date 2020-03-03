@@ -1,0 +1,67 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+
+<p>
+Alien Breed is one of the all time great Amiga games. Top down maze game play similar to the arcade  classic Gauntlet combined with themed levels and characters from the film Aliens made this a true Amiga classic.
+</p>
+
+<p>
+I originally started to write a clone for this game in '93 for the Acorn Archimedes computer. That stalled pretty quickly as I didn't have access to any of the original media files.
+</p>
+
+<p>
+So 17 years later when the Wii console <a href="http://wiibrew.org/wiki/Main_Page">homebrew scene</a> came alive I realised it might be time to try again. This time however I had a large helping hand in the form of an existing, and excellent, PC clone <a href="https://www.mobygames.com/game/alien-breed-obliteration">Alien Breed Obliteration</a> by FlashJesterPunk.
+</p>
+
+<p>
+Wii development is not easy or quick. There is an excellent clone of the GCC tool chain and stdc libraries from the <a href="http://www.devkitpro.org/">Devkitpro</a> project. A number of other low level but essential libraries have also been ported to the platform or written to access the underlying Nintendo OS. However there is no IDE, debugger or simulator. Development is a time consuming round trip of edit, compile, copy to SDCard and try in the physical Wii.
+</p>
+
+<p>
+Because of this, building a game from scratch for the Wii is a daunting task. Porting an existing portable game (for example written in C and SDL) is the more common approach.
+</p>
+
+<p>
+To minimise the development turnaround I wanted to build and test the game predominantly on my Linux laptop. Building and testing on the Wii only when required. I also wanted to do this without resorting to C.
+</p>
+
+<p>
+To achieve this I used Python and SDL. The game was written initially on my laptop using Python 2.4 and the SDL wrapper <a href="http://www.pygame.org/">PyGame</a>. This is a very portable stack, running happily on Linux, Windows and, as it turns out, the Wii.
+</p>
+
+<p>
+Nobody had publicly written a Python/PyGame game for the Wii before so there was considerable challenges to getting that stack to work on the Wii. I will cover that in a different post.
+</p>
+
+<p>
+I also had the difficulty of not having written a game of any significance before.
+</p>
+
+<p>
+Read about my progress <a href="index.html">here</a>:
+</p>
+
+<ul>
+<li>
+<a href="../wp-content/uploads/2010/07/alienhead.png"></a>
+</li>
+
+<li>
+<a href="wp-content/uploads/2010/07/level5.png"><img class="alignnone size-medium wp-image-15" title="Alien Breed Obliteration Level5" src="wp-content/uploads/2010/07/level5-300x225.png" alt="" width="300" height="225" /></a>
+</li>
+
+<li>
+<a href="wp-content/uploads/2010/07/level10.png"><img class="alignnone size-medium wp-image-16" title="Alien Breed Obliteration Level10" src="wp-content/uploads/2010/07/level10-300x225.png" alt="" width="300" height="225" /></a>
+</li>
+
+<li>
+<a href="wp-content/uploads/2010/07/intex.png"><img class="alignnone size-medium wp-image-14" title="Alien Breed Obliteration Intex" src="wp-content/uploads/2010/07/intex-300x225.png" alt="" width="300" height="225" /></a>
+</li>
+
+</ul>
+
+</body>
+</html>

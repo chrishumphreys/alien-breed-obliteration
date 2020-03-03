@@ -1,0 +1,63 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+
+<h1>Porting to Android</h1>
+<p>
+In a <a href="python-to-java.html">previous post</a> I showed how I translated the Python source to Java. Translating the source for my game logic to Java is only part of the problem. The Java still requires a functioning game library for the target platform, in my source translation this was just stubbed.
+
+<br/><br/>
+
+The Python version uses the excellent <a href="http://www.libsdl.org/">SDL library</a> as it works on just about everything. Everything except Android. What I needed was a similar library which I could drop into my game with minimal impact. I found that in <a href="http://slick.cokeandcode.com/index.php?entry=entry101126-123313">Slick-AE</a>.
+
+<br/><br/>
+
+<a href="http://slick.cokeandcode.com/index.php">Slick</a> is an opensource 2D Java game library for the desktop with a very simple API. The author, Kevin Glass, has recently started patching the Slick library to run on Android using the <a href="http://code.google.com/p/libgdx/">libGDX</a>. This promises a simple API which can run equally well on the Desktop or phone. Conveniently Slick's API is very similar to the MyGame library in the Python game.
+</p>
+
+<p>
+Implementing the MyGame stubs, stripping out SDL concepts and replacing with Slick equivalents took a couple of days. I am very impressed with the simplicity of the Slick library, things just worked first time. Much easier than the original <a href="mygame.html">SDL/Python/Pyrex attempts</a>!
+</p>
+
+
+<a href="wp-content/uploads/2011/04/jab.jpg"><img class="alignnone size-medium wp-image-213" title="jab - wiiab java port" src="wp-content/uploads/2011/04/jab-300x175.jpg" alt="" width="300" height="175" /></a>
+
+<p>
+With the game running in Java on the Desktop I could start looking at an Android port.
+
+<br/><br/>
+
+My IDE, IntelliJ, includes good tool support for targeting Android. Getting a basic game running was a fairly straightforward process of:
+
+
+<ul>
+	<li>Creating a skeleton Android project (based on Slick-AE's example project)</li>
+	<li>Adding the required manifest and Article (Main) class to launch my main Game loop</li>
+	<li>Importing my translated the Java sources</li>
+	<li>Modifying the screen resolution to match the 800x400 on the phone</li>
+	<li>Modifying the game media to work with libGDX (Converting the OGGs to WAVs and BMPs to transparent PNGs)</li>
+	<li>Making a few modifications to disable some Slick features not (yet) implemented for Android</li>
+</ul>
+
+<br/><br/>
+
+The Android emulator is painfully slow so the easiest way to test is to plug in the real phone. Once the phone has been <a href="http://developer.android.com/guide/developing/device.html">added as a device</a> it is automatically added as the target of a Run/Debug from IntelliJ. It couldn't really be easier.
+</p>
+
+
+<h1>The result</h1>
+
+<p>
+With only a couple of weeks work I now have a fully playable port of the game on Android. The entire process was pretty straightforward. The tooling, with the exception of the Android emulator, is a pleasure to work with.
+<br/><br/>
+Unfortunately I can't release a playable version of the Android app due to the copyrighted media. As there have been <a href="http://rss.slashdot.org/~r/Slashdot/slashdot/~3/M1sV6hjUMiw/Pirated-App-Sold-On-Mac-App-Store">instances</a> of unscrupulous developers taking open source games and releasing into App stores
+for personal profit I'm reluctant to release the source code either. However, if you are a serious developer
+looking for help you can contact me.
+<br/><br/>
+You can see a video of the game running on the phone is <a href="other-platforms/ab-android-bld4.avi">here</a>.
+</p>
+
+</body>
+</html>
